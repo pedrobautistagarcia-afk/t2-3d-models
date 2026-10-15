@@ -51,19 +51,19 @@ label.sl input{accent-color:var(--accent);width:100px}
   </div></div>
 <script>
 document.getElementById("whoN").textContent=EDITED_BY;
-// Shared note: stored in a small Supabase table, so everyone who opens this page sees the same text (refreshes every 3 s)
+// Shared note: stored in a small Supabase table, so everyone who opens this page sees the same text (saves as you type, refreshes every 1.5 s)
 (()=>{const URL_="https://hbdwlvsfpzvqqyhlbtgm.supabase.co/rest/v1/shared_note",KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhiZHdsdnNmcHp2cXF5aGxidGdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjI5MDAsImV4cCI6MjEwNzYzODkwMH0.hDSCEomGP8MUN_9QetmilZ7Vf1bkh_MGnkd201cqUaE";
   const H={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"},$=id=>document.getElementById(id);
   let last=null,typing=false;
   try{$("nWho").value=localStorage.getItem("t2who")||""}catch(e){}
-  $("nBody").addEventListener("input",()=>{typing=true});
+  let tmr=null;$("nBody").addEventListener("input",()=>{typing=true;clearTimeout(tmr);$("nMeta").textContent="Saving…";tmr=setTimeout(()=>$("nSave").click(),800)});
   const show=r=>{const t=new Date(r.updated_at);$("nMeta").textContent="Last saved by "+(r.author||"someone")+" · "+t.toLocaleString("en-GB",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",second:"2-digit"})};
   const pull=async()=>{try{const r=await fetch(URL_+"?id=eq.1&select=*",{headers:H});if(!r.ok)throw 0;const [row]=await r.json();$("nLive").textContent="· live";
       if(row&&row.updated_at!==last){last=row.updated_at;if(!typing)$("nBody").value=row.body;show(row)}}catch(e){$("nLive").textContent="· offline (needs internet)"}};
   $("nSave").onclick=async()=>{const who=$("nWho").value.trim()||"Anonymous";try{localStorage.setItem("t2who",who)}catch(e){}
     $("nSave").disabled=true;try{const r=await fetch(URL_+"?id=eq.1",{method:"PATCH",headers:{...H,Prefer:"return=representation"},body:JSON.stringify({body:$("nBody").value,author:who,updated_at:new Date().toISOString()})});
       if(!r.ok)throw 0;const [row]=await r.json();typing=false;last=row.updated_at;show(row)}catch(e){$("nMeta").textContent="Could not save. Check the internet connection."}$("nSave").disabled=false};
-  pull();setInterval(pull,3000)})();
+  pull();setInterval(pull,1500)})();
 </script>
 <div class="sunp" role="group" aria-label="Day simulation"><button id="sP" aria-pressed="false">Play day</button>
   <input id="sT" type="range" min="0" max="1435" step="1" value="600" aria-label="Time of day"><input id="sD" type="date" aria-label="Date">
