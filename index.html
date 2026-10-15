@@ -42,8 +42,29 @@ label.sl input{accent-color:var(--accent);width:100px}
   <p>Roof canopy built from the “L400 Roof Plan” drawing, in the same coordinates as the level models. The metal roof is laid in vaulted bands with a rounded edge beam; rooflight boxes are grouped in diamond fields along the spine of each pier and over the central hub; the photovoltaic arrays sit in two bands along each pier. Heights are not in the drawing: the shell profile is illustrative and can be adjusted below.</p>
   <div class="kpi" id="kpi"></div>
   <div id="st">Loading roof…</div>
-  <div id="who" style="margin-top:8px;padding:6px 8px;border:1px dashed #f2c96b;border-radius:6px;font-size:13px">Edited by: <b id="whoN"></b></div></div>
-<script>document.getElementById("whoN").textContent=EDITED_BY;</script>
+  <div id="who" style="margin-top:8px;padding:6px 8px;border:1px dashed #f2c96b;border-radius:6px;font-size:13px">Edited by: <b id="whoN"></b></div>
+  <div class="note" style="margin-top:8px;padding:8px;border:1px solid #f2c96b;border-radius:6px;display:grid;gap:6px">
+    <b style="font-size:13px">Shared note <span id="nLive" style="font-weight:400;color:var(--muted)">· connecting…</span></b>
+    <textarea id="nBody" rows="3" maxlength="2000" placeholder="Write anything…" style="background:#0e1a2c;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:6px;font:inherit;resize:vertical"></textarea>
+    <div style="display:flex;gap:6px"><input id="nWho" maxlength="60" placeholder="Your name" style="flex:1;background:#0e1a2c;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:5px 6px;font:inherit"><button id="nSave">Save</button></div>
+    <span id="nMeta" style="color:var(--muted);font-size:12px"></span>
+  </div></div>
+<script>
+document.getElementById("whoN").textContent=EDITED_BY;
+// Shared note: stored in a small Supabase table, so everyone who opens this page sees the same text (refreshes every 3 s)
+(()=>{const URL_="https://hbdwlvsfpzvqqyhlbtgm.supabase.co/rest/v1/shared_note",KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhiZHdsdnNmcHp2cXF5aGxidGdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjI5MDAsImV4cCI6MjEwNzYzODkwMH0.hDSCEomGP8MUN_9QetmilZ7Vf1bkh_MGnkd201cqUaE";
+  const H={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"},$=id=>document.getElementById(id);
+  let last=null,typing=false;
+  try{$("nWho").value=localStorage.getItem("t2who")||""}catch(e){}
+  $("nBody").addEventListener("input",()=>{typing=true});
+  const show=r=>{const t=new Date(r.updated_at);$("nMeta").textContent="Last saved by "+(r.author||"someone")+" · "+t.toLocaleString("en-GB",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",second:"2-digit"})};
+  const pull=async()=>{try{const r=await fetch(URL_+"?id=eq.1&select=*",{headers:H});if(!r.ok)throw 0;const [row]=await r.json();$("nLive").textContent="· live";
+      if(row&&row.updated_at!==last){last=row.updated_at;if(!typing)$("nBody").value=row.body;show(row)}}catch(e){$("nLive").textContent="· offline (needs internet)"}};
+  $("nSave").onclick=async()=>{const who=$("nWho").value.trim()||"Anonymous";try{localStorage.setItem("t2who",who)}catch(e){}
+    $("nSave").disabled=true;try{const r=await fetch(URL_+"?id=eq.1",{method:"PATCH",headers:{...H,Prefer:"return=representation"},body:JSON.stringify({body:$("nBody").value,author:who,updated_at:new Date().toISOString()})});
+      if(!r.ok)throw 0;const [row]=await r.json();typing=false;last=row.updated_at;show(row)}catch(e){$("nMeta").textContent="Could not save. Check the internet connection."}$("nSave").disabled=false};
+  pull();setInterval(pull,3000)})();
+</script>
 <div class="sunp" role="group" aria-label="Day simulation"><button id="sP" aria-pressed="false">Play day</button>
   <input id="sT" type="range" min="0" max="1435" step="1" value="600" aria-label="Time of day"><input id="sD" type="date" aria-label="Date">
   <select id="sS" aria-label="Speed"><option value="10">10 min/s</option><option value="30" selected>30 min/s</option><option value="90">90 min/s</option></select>
