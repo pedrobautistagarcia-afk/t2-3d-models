@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8">
+<!-- ============================================================
+     EDIT HERE: change the name between the quotes and commit.
+     ============================================================ -->
+<script>const EDITED_BY = "Pedro Bautista";</script><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T2 · Roof in 3D</title>
+
+<style>
+/* Same dark world as the L00 / L01 / L02 models */
+:root{--bg:#0b1424;--panel:rgba(12,22,38,.86);--line:rgba(120,200,255,.25);--ink:#d6e6f7;--muted:#8fb0d1;--accent:#78c8ff;--f:"IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;color-scheme:dark}
+:root[data-theme="light"]{color-scheme:dark}
+html,body{height:100%}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f);font-size:14px;overflow:hidden}
+canvas{display:block;cursor:grab}
+.head{position:absolute;left:16px;top:14px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;max-width:min(360px,calc(100% - 32px))}
+.head h1{margin:0 0 3px;font-size:17px}.head p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45}
+#st{color:#f2c96b;font-size:12px;margin-top:4px}
+.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px}
+.kpi div{background:rgba(120,200,255,.07);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+.kpi b{display:block;font-size:17px;font-variant-numeric:tabular-nums}.kpi span{color:var(--muted);font-size:11.5px}
+.bar{position:absolute;left:16px;right:16px;bottom:14px;z-index:5;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:7px 11px;cursor:pointer;font:inherit}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button[aria-pressed="true"]{background:var(--accent);color:#06101c;border-color:var(--accent)}
+label.sl{display:inline-flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 10px;color:var(--muted);font-size:12.5px}
+label.sl input{accent-color:var(--accent);width:100px}
+.leg{position:absolute;right:16px;top:14px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12.5px;display:grid;gap:4px}
+.leg b{font-weight:500;color:var(--muted);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
+.leg span{display:flex;align-items:center;gap:8px}.leg i{width:18px;height:6px;border-radius:2px;display:inline-block;flex:none}
+.card{position:absolute;right:16px;top:14px;z-index:7;width:320px;background:rgba(12,22,38,.95);border:1px solid var(--accent);border-radius:8px;padding:12px 14px}
+.card[hidden]{display:none!important}.card h2{margin:0 26px 2px 0;font-size:17px}.card .sub{color:var(--muted);font-size:12.5px;margin-bottom:8px}
+.card .x{position:absolute;right:8px;top:6px;padding:2px 8px}
+.card dl{display:grid;grid-template-columns:120px 1fr;gap:4px 10px;margin:0;font-size:13px}.card dt{color:var(--muted)}.card dd{margin:0}
+.card .note{color:#f2c96b;font-size:12px;margin-top:8px}
+.sunp{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:6;width:min(470px,calc(100% - 32px));box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;grid-template-columns:auto 1fr auto auto;gap:6px 8px;align-items:center}
+.sunp input[type=range]{accent-color:#f2c96b;width:100%}.sunp input[type=date],.sunp select{background:#0e1a2c;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 6px;font:inherit;font-size:12.5px}
+#sOut{grid-column:1/-1;color:#f2c96b;font-size:12.5px;font-variant-numeric:tabular-nums}
+@media (max-width:1180px){.sunp{top:auto;bottom:110px}}
+@media (max-width:700px){.head p,.kpi{display:none}.leg{display:none}.card{left:8px;right:8px;width:auto}}
+</style></head><body>
+<div class="head"><h1>Terminal 2 · Roof (L400)</h1>
+  <p>Roof canopy built from the “L400 Roof Plan” drawing, in the same coordinates as the level models. The metal roof is laid in vaulted bands with a rounded edge beam; rooflight boxes are grouped in diamond fields along the spine of each pier and over the central hub; the photovoltaic arrays sit in two bands along each pier. Heights are not in the drawing: the shell profile is illustrative and can be adjusted below.</p>
+  <div class="kpi" id="kpi"></div>
+  <div id="st">Loading roof…</div>
+  <div id="who" style="margin-top:8px;padding:6px 8px;border:1px dashed #f2c96b;border-radius:6px;font-size:13px">Edited by: <b id="whoN"></b></div></div>
+<script>document.getElementById("whoN").textContent=EDITED_BY;</script>
+<div class="sunp" role="group" aria-label="Day simulation"><button id="sP" aria-pressed="false">Play day</button>
+  <input id="sT" type="range" min="0" max="1435" step="1" value="600" aria-label="Time of day"><input id="sD" type="date" aria-label="Date">
+  <select id="sS" aria-label="Speed"><option value="10">10 min/s</option><option value="30" selected>30 min/s</option><option value="90">90 min/s</option></select>
+  <div id="sOut"></div></div>
+<div class="card" id="card" hidden><button class="x" id="cardX" aria-label="Close">×</button><h2 id="cT"></h2><div class="sub" id="cS"></div><dl id="cB"></dl><div class="note" id="cN"></div></div>
+<div class="leg" id="leg">
+  <b>Roof</b>
+  <span><i style="background:#e7e9ec"></i>Roof canopy (vaulted metal bands)</span><span><i style="background:#d9d3c7"></i>Rounded edge beam</span>
+  <span><i style="background:#c4ced6"></i>Rooflight field</span>
+  <span><i style="background:#f3f1ec"></i>Rooflight boxes (glazed top)</span>
+  <span><i style="background:#1f3f8a"></i>Photovoltaic arrays</span>
+  <span><i style="background:#fff4dc"></i>Daylight spots on the soffit</span>
+  <span><i style="background:linear-gradient(90deg,#fff1c8,transparent)"></i>Light beams (fade down to L02, +12.00)</span>
+  <b>Reference</b><span><i style="background:#f2c96b"></i>Level 02 slab edge (+12.00)</span>
+  <span><i style="background:#9fd0ff"></i>Structural grid</span>
+</div>
+<div class="bar">
+  <button id="bRoof" aria-pressed="true">Roof surface</button><button id="bSof" aria-pressed="true">Soffit</button>
+  <button id="bDia" aria-pressed="true">Rooflights</button><button id="bBeam" aria-pressed="true">Light beams</button><button id="bPV" aria-pressed="true">Solar panels</button>
+  <label class="sl" for="hB">Beam intensity<input id="hB" type="range" min="0" max="1" step="0.05" value="1"><b id="hBv">100%</b></label>
+  <button id="bL2" aria-pressed="true">L02 slab edge</button><button id="bGrid" aria-pressed="false">Grid</button>
+  <label class="sl" for="hE">Edge height<input id="hE" type="range" min="14" max="34" step="1" value="22"><b id="hEv">+22 m</b></label>
+  <label class="sl" for="hR">Shell rise<input id="hR" type="range" min="0" max="25" step="1" value="16"><b id="hRv">16 m</b></label>
+  <label class="sl" for="hV">Vault depth<input id="hV" type="range" min="0" max="5" step="0.25" value="2.5"><b id="hVv">2.5 m</b></label>
+  <label class="sl" for="hO">Roof opacity<input id="hO" type="range" min="0.1" max="1" step="0.05" value="1"><b id="hOv">100%</b></label>
+  <button id="bTop">Top view</button><button id="bPer">Perspective</button><button id="bLow">Eye level</button>
+</div>
+<script src="three.min.js"></script>
+<script src="OrbitControls.js"></script>
+<script src="roof-data.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const ren=new THREE.WebGLRenderer({antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.setSize(innerWidth,innerHeight);document.body.prepend(ren.domElement);
+const sc=new THREE.Scene();sc.background=new THREE.Color(0x0b1424);sc.fog=new THREE.Fog(0x0b1424,2200,5200);
+const cam=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,1,8000);cam.up.set(0,0,1);
+const ctl=new THREE.OrbitControls(cam,ren.domElement);ctl.enableDamping=true;ctl.maxPolarAngle=Math.PI*.495;ctl.screenSpacePanning=true;
+ctl.mouseButtons={LEFT:THREE.MOUSE.PAN,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};ctl.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
+sc.add(new THREE.HemisphereLight(0xeef4ff,0x2a3344,.8));const sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(-400,-600,900);sc.add(sun);
+const fmt=n=>Math.round(n).toLocaleString('en-GB');
+let D,E=22,RISE=16,VAULT=2.5;const G={};const zf=(f,g=0)=>E+RISE*f+VAULT*g;
+function flag(id,objs){const b=$(id);b.onclick=()=>{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);objs().forEach(o=>o&&(o.visible=on))}}
+function view(k){const c=[-10,25];if(k==='top'){cam.position.set(c[0],c[1]-1,2150);ctl.target.set(c[0],c[1],0)}
+  else if(k==='low'){cam.position.set(-150,-40,13);ctl.target.set(-60,10,30)}
+  else{cam.position.set(-900,-1450,950);ctl.target.set(-10,20,10)}}
+const sprite=(t,col,x,y,z,s=1)=>{const c=document.createElement('canvas');c.width=128;c.height=64;const g=c.getContext('2d');g.fillStyle='rgba(8,15,27,.85)';g.fillRect(0,0,128,64);g.strokeStyle=col;g.lineWidth=4;g.strokeRect(2,2,124,60);
+  g.fillStyle='#fff';g.font='bold 34px Arial';g.textAlign='center';g.fillText(t,64,45);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));sp.scale.set(14*s,7*s,1);sp.position.set(x,y,z);return sp};
+(async()=>{
+  try{D=window.__ROOF}catch(e){$('st').textContent='The roof could not be loaded. Reload the page to try again.';return}
+  const M=D.mesh,nv=M.v.length/3;
+  // ---- roof surface (plan draped on the shell) and soffit
+  const geo=new THREE.BufferGeometry(),pos=new Float32Array(nv*3);geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('uv',new THREE.Float32BufferAttribute(M.uv,2));geo.setIndex(M.i);
+  const tex=new THREE.TextureLoader().load(window.__IMG['roof_plan.jpg']);tex.anisotropy=ren.capabilities.getMaxAnisotropy();
+  const roofM=new THREE.MeshLambertMaterial({map:tex,side:THREE.FrontSide,transparent:true,opacity:1});
+  G.roof=new THREE.Mesh(geo,roofM);sc.add(G.roof);
+  const sofG=new THREE.BufferGeometry(),spos=new Float32Array(nv*3);sofG.setAttribute('position',new THREE.BufferAttribute(spos,3));sofG.setIndex(M.i);
+  sofG.setAttribute('uv',new THREE.Float32BufferAttribute(M.uv,2));const sT=new THREE.TextureLoader().load(window.__IMG['soffit.jpg']);sT.anisotropy=ren.capabilities.getMaxAnisotropy();
+  G.sof=new THREE.Mesh(sofG,new THREE.MeshLambertMaterial({map:sT,emissiveMap:sT,emissive:0x555555,side:THREE.BackSide,transparent:true,opacity:1}));sc.add(G.sof);
+  // edge fascia between top and soffit along the outline
+  const O=D.outline,fasG=new THREE.BufferGeometry(),fpos=new Float32Array(O.length*4*3),fidx=[];
+  for(let i=0;i<O.length;i++){const j=(i+1)%O.length,b=i*4;fidx.push(b,b+1,b+2,b,b+2,b+3)}
+  fasG.setAttribute('position',new THREE.BufferAttribute(fpos,3));fasG.setIndex(fidx);
+  G.fas=new THREE.Mesh(fasG,new THREE.MeshLambertMaterial({color:0xc9c3b8,side:THREE.DoubleSide}));sc.add(G.fas);
+  // rounded edge beam along the whole perimeter, like the big tube-shaped fascia on site
+  const tubeM=new THREE.MeshLambertMaterial({color:0xd9d3c7});G.tube=new THREE.Mesh(new THREE.BufferGeometry(),tubeM);G.tube.castShadow=true;sc.add(G.tube);
+  let cx0=0,cy0=0;O.forEach(([x,y])=>{cx0+=x;cy0+=y});
+  const fascia=()=>{const R=2.3,pts=O.map(([x,y],i)=>{const a=O[(i+O.length-1)%O.length],b=O[(i+1)%O.length];let nx=-(b[1]-a[1]),ny=b[0]-a[0];const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;
+      return new THREE.Vector3(x,y,E-THK/2)});
+    const cur=new THREE.CatmullRomCurve3(pts,true,'centripetal');const g=new THREE.TubeGeometry(cur,1600,R,14,true);G.tube.geometry.dispose();G.tube.geometry=g};
+  const THK=1.6;
+  // ---- diamond rooflights: shallow glazed pyramids
+  // ---- rooflights: raised white boxes with a sloped glazed top (as on site), laid out on the diamond grid
+  const dG=new THREE.BoxGeometry(1,1,1);dG.translate(0,0,.5);
+  const dM=new THREE.MeshLambertMaterial({color:0xf3f1ec});
+  G.dia=new THREE.InstancedMesh(dG,dM,D.dia.length);G.dia.castShadow=true;G.dia.receiveShadow=true;sc.add(G.dia);
+  const gG=new THREE.PlaneGeometry(1,1);
+  const gM=new THREE.MeshStandardMaterial({color:0x6f93ad,roughness:.08,metalness:.6,emissive:0x0d1c28});
+  G.diaG=new THREE.InstancedMesh(gG,gM,D.dia.length);G.diaG.raycast=()=>{};sc.add(G.diaG);
+  // ---- light beams under each rooflight: a soft shaft that fades out as it goes down
+  const bc=document.createElement('canvas');bc.width=8;bc.height=256;{const g=bc.getContext('2d'),gr=g.createLinearGradient(0,0,0,256);
+    gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.08,'rgba(255,255,255,.75)');gr.addColorStop(.35,'rgba(255,255,255,.32)');gr.addColorStop(.7,'rgba(255,255,255,.08)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,8,256)}
+  const bT=new THREE.CanvasTexture(bc);
+  const bG=new THREE.CylinderGeometry(1,1.45,1,4,1,true);bG.rotateX(Math.PI/2);bG.translate(0,0,-.5);
+  const bM=new THREE.MeshBasicMaterial({color:0xfff1c8,alphaMap:bT,transparent:true,opacity:.008,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  G.beam=new THREE.InstancedMesh(bG,bM,D.dia.length);G.beam.raycast=()=>{};sc.add(G.beam);
+  // soft pool of light where each beam lands
+  const pc2=document.createElement('canvas');pc2.width=pc2.height=64;{const g=pc2.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64)}
+  const poolM=new THREE.MeshBasicMaterial({color:0xfff1c8,map:new THREE.CanvasTexture(pc2),transparent:true,opacity:.006,blending:THREE.AdditiveBlending,depthWrite:false});
+  G.pool=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),poolM,D.dia.length);G.pool.raycast=()=>{};sc.add(G.pool);let BEAM_FLOOR=12;
+  // beams lean away from the sun: shear about the rooflight plane so the shaft follows the sun's direction
+  const SUN={kx:0,ky:0,day:1},SH=new THREE.Matrix4(),o4=new THREE.Object3D();
+  const placeBeams=()=>{const kx=SUN.kx,ky=SUN.ky;
+    D.dia.forEach(([x,y,s,a,f,fi,g],i)=>{const zt=zf(f,g)-THK,len=Math.max(1,zt-BEAM_FLOOR),r=s/Math.SQRT2;o4.position.set(x,y,zt);o4.rotation.set(0,0,(a-45)*Math.PI/180);o4.scale.set(r,r,len);o4.updateMatrix();
+      SH.set(1,0,kx,-kx*zt,0,1,ky,-ky*zt,0,0,1,0,0,0,0,1);G.beam.setMatrixAt(i,SH.multiply(o4.matrix));
+      o4.position.set(x-kx*len,y-ky*len,BEAM_FLOOR+.05);o4.rotation.set(0,0,0);o4.scale.set(s*3.2,s*3.2,1);o4.updateMatrix();G.pool.setMatrixAt(i,o4.matrix)});
+    G.beam.instanceMatrix.needsUpdate=true;G.pool.instanceMatrix.needsUpdate=true};
+  // ---- PV arrays: module grid drawn on the top face
+  const pc=document.createElement('canvas');pc.width=256;pc.height=64;{const g=pc.getContext('2d');g.fillStyle='#1d3a80';g.fillRect(0,0,256,64);g.strokeStyle='#9fb6e6';g.lineWidth=2;
+    for(let x=0;x<=256;x+=16){g.beginPath();g.moveTo(x,0);g.lineTo(x,64);g.stroke()}for(let y=0;y<=64;y+=21.3){g.beginPath();g.moveTo(0,y);g.lineTo(256,y);g.stroke()}}
+  const pT=new THREE.CanvasTexture(pc);pT.anisotropy=8;
+  const pG=new THREE.BoxGeometry(1,1,1);pG.translate(0,0,.5);
+  const pM=[0,0,0,0,new THREE.MeshStandardMaterial({map:pT,roughness:.35,metalness:.5}),0].map(m=>m||new THREE.MeshStandardMaterial({color:0x5b6676,roughness:.6}));
+  G.pv=new THREE.InstancedMesh(pG,pM,D.pv.length);sc.add(G.pv);
+  const o3=new THREE.Object3D();
+  function place(){
+    for(let i=0;i<nv;i++){const z=zf(M.v[i*3+2],M.g[i]);pos[i*3]=spos[i*3]=M.v[i*3];pos[i*3+1]=spos[i*3+1]=M.v[i*3+1];pos[i*3+2]=z;spos[i*3+2]=z-THK}
+    geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();geo.computeBoundingSphere();sofG.attributes.position.needsUpdate=true;sofG.computeVertexNormals();sofG.computeBoundingSphere();
+    O.forEach((a,i)=>{const b=O[(i+1)%O.length],k=i*12;fpos.set([a[0],a[1],E,b[0],b[1],E,b[0],b[1],E-THK,a[0],a[1],E-THK],k)});fasG.attributes.position.needsUpdate=true;fasG.computeVertexNormals();fasG.computeBoundingSphere();
+    D.dia.forEach(([x,y,s,a,f,fi,g],i)=>{const z=zf(f,g),w=s*1.3,h=1.1,ar=a*Math.PI/180;o3.position.set(x,y,z-.2);o3.rotation.set(0,0,ar);o3.scale.set(w,w,h+.2);o3.updateMatrix();G.dia.setMatrixAt(i,o3.matrix);
+      o3.position.set(x,y,z+h+.03);o3.rotation.set(0,0,0);o3.updateMatrix();const M4=new THREE.Matrix4().makeRotationZ(ar).multiply(new THREE.Matrix4().makeRotationX(-.32));M4.scale(new THREE.Vector3(s*1.05,s*1.05,1));M4.setPosition(x,y,z+h+.04);G.diaG.setMatrixAt(i,M4)});G.dia.instanceMatrix.needsUpdate=true;G.diaG.instanceMatrix.needsUpdate=true;
+    placeBeams();
+    D.pv.forEach(([x,y,L,W,a,f,g],i)=>{o3.position.set(x,y,zf(f,g)+.35);o3.rotation.set(0,0,a);o3.scale.set(L,W,.12);o3.updateMatrix();G.pv.setMatrixAt(i,o3.matrix)});G.pv.instanceMatrix.needsUpdate=true;
+    fascia();
+  }
+  // ---- reference: L02 slab edge at +12 and the grid
+  G.l2=new THREE.Line(new THREE.BufferGeometry().setFromPoints([...D.foot2,D.foot2[0]].map(([x,y])=>new THREE.Vector3(x,y,12))),new THREE.LineBasicMaterial({color:0xf2c96b}));sc.add(G.l2);
+  const grM=new THREE.MeshLambertMaterial({color:0x1b2638}),gr=new THREE.Mesh(new THREE.PlaneGeometry(6000,6000),grM);gr.position.set(0,0,-.1);gr.receiveShadow=true;sc.add(gr);
+  G.grid=new THREE.Group();D.grid.forEach(([t,x,y])=>G.grid.add(sprite(t,'#9fd0ff',x,y,2,.5)));G.grid.visible=false;sc.add(G.grid);
+  place();
+  // ---- day simulation: sun position over Kuwait (29.24° N, 47.97° E, UTC+3), roof shadow, sky and beams follow the sun
+  const LAT=29.24,LON=47.97,NORTH_AZ=332; // drawing +x assumed to point along the runways (≈332° true)
+  ren.shadowMap.enabled=true;ren.shadowMap.type=THREE.PCFSoftShadowMap;
+  sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-800,right:800,top:800,bottom:-800,near:10,far:5000});sun.shadow.bias=-.0004;sc.add(sun.target);
+  G.roof.castShadow=true;G.roof.receiveShadow=true;roofM.shadowSide=THREE.DoubleSide;sun.shadow.normalBias=.6;G.pv.castShadow=true;
+  const hemi=sc.children.find(o=>o.isHemisphereLight);
+  const sd=document.createElement('canvas');sd.width=sd.height=128;{const g=sd.getContext('2d'),r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,'rgba(255,250,230,1)');r.addColorStop(.18,'rgba(255,236,180,1)');r.addColorStop(.4,'rgba(255,200,120,.35)');r.addColorStop(1,'rgba(255,180,100,0)');g.fillStyle=r;g.fillRect(0,0,128,128)}
+  const sunS=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(sd),fog:false,depthWrite:false}));sunS.scale.set(420,420,1);sc.add(sunS);
+  const rad=Math.PI/180,C=h=>new THREE.Color(h);
+  const sunPos=ms=>{const n=ms/864e5+2440587.5-2451545,L=(280.46+.9856474*n)%360,g=(357.528+.9856003*n)*rad,lam=(L+1.915*Math.sin(g)+.02*Math.sin(2*g))*rad,eps=(23.439-4e-7*n)*rad;
+    const ra=Math.atan2(Math.cos(eps)*Math.sin(lam),Math.cos(lam)),dec=Math.asin(Math.sin(eps)*Math.sin(lam)),gmst=((18.697374558+24.06570982441908*n)%24+24)%24,H=(gmst*15+LON)*rad-ra,ph=LAT*rad;
+    const el=Math.asin(Math.sin(ph)*Math.sin(dec)+Math.cos(ph)*Math.cos(dec)*Math.cos(H)),az=Math.atan2(-Math.sin(H),Math.tan(dec)*Math.cos(ph)-Math.sin(ph)*Math.cos(H));return {el,az:(az/rad+360)%360}};
+  const SKY=[[-12,C(0x0b1424),C(0x0e1522)],[-4,C(0x1d2240),C(0x161c2a)],[0,C(0x6b4a5e),C(0x2a2a30)],[5,C(0xd98c5c),C(0x5a5048)],[15,C(0x8fb4d6),C(0x8c8676)],[40,C(0x6fa6dc),C(0xa69c86)]];
+  const skyAt=e=>{let i=0;while(i<SKY.length-2&&e>SKY[i+1][0])i++;const[a,b]=[SKY[i],SKY[i+1]],t=Math.min(1,Math.max(0,(e-a[0])/(b[0]-a[0])));return [a[1].clone().lerp(b[1],t),a[2].clone().lerp(b[2],t)]};
+  const tz=(d,min)=>{const[y,m,dd]=d.split('-').map(Number);return Date.UTC(y,m-1,dd)+(min-180)*6e4};
+  const now=new Date(Date.now()+180*6e4);$('sD').value=now.toISOString().slice(0,10);$('sT').value=Math.round((now.getUTCHours()*60+now.getUTCMinutes())/5)*5;
+  let BEAMV=1;
+  const updateSun=()=>{const min=+$('sT').value,p=sunPos(tz($('sD').value,min)),e=p.el/rad,th=(NORTH_AZ-p.az)*rad;
+    const dir=new THREE.Vector3(Math.cos(th)*Math.cos(p.el),Math.sin(th)*Math.cos(p.el),Math.sin(p.el));
+    sun.position.copy(dir).multiplyScalar(2000);sun.target.position.set(0,0,0);
+    const day=Math.min(1,Math.max(0,(e+1)/12)),hi=Math.min(1,Math.max(0,e/45));
+    sun.intensity=.95*day;sun.color.copy(C(0xffa060).lerp(C(0xfff8ee),hi));sun.visible=e>-1;
+    hemi.intensity=.22+.6*Math.min(1,Math.max(0,(e+8)/30));
+    const[sk,gd]=skyAt(e);sc.background.copy(sk);sc.fog.color.copy(sk);grM.color.copy(gd);
+    sunS.position.copy(dir).multiplyScalar(2600);sunS.visible=e>-3;
+    const el=Math.max(p.el,12*rad);SUN.kx=dir.x/Math.tan(el)/Math.max(1e-3,Math.hypot(dir.x,dir.y))*(Math.hypot(dir.x,dir.y)>1e-3?1:0);SUN.ky=dir.y/Math.tan(el)/Math.max(1e-3,Math.hypot(dir.x,dir.y))*(Math.hypot(dir.x,dir.y)>1e-3?1:0);
+    const bf=Math.min(1,Math.max(0,e/20));bM.opacity=.008*BEAMV*bf;poolM.opacity=.006*BEAMV*bf;bM.color.copy(C(0xffc890).lerp(C(0xfff1c8),hi));G.beam.visible=G.pool.visible=$('bBeam').getAttribute('aria-pressed')==='true'&&bf>0;placeBeams();
+    G.sof.material.emissive.copy(C(0x8a7a60).lerp(C(0x555555),day));
+    const hh=String(Math.floor(min/60)).padStart(2,'0'),mm=String(min%60).padStart(2,'0');
+    $('sOut').textContent=`${hh}:${mm} · ${e>0?'sun '+e.toFixed(0)+'° high, azimuth '+p.az.toFixed(0)+'°':e>-6?'twilight':'night'}`};
+  $('sT').oninput=updateSun;$('sD').oninput=updateSun;
+  let play=false,last=0;$('sP').onclick=()=>{play=!play;$('sP').setAttribute('aria-pressed',play);$('sP').textContent=play?'Pause':'Play day'};
+  window.__sun=t=>{if(!play){last=t;return}const dt=(t-last)/1000;last=t;let v=+$('sT').value+dt*(+$('sS').value);if(v>=1440)v-=1440;$('sT').value=v;updateSun()};
+  updateSun();
+  {const sp=document.querySelector('.sunp'),bar=document.querySelector('.bar'),pl=()=>{sp.style.bottom=innerWidth<=1180?(innerHeight-bar.getBoundingClientRect().top+8)+'px':''};pl();addEventListener('resize',pl);new ResizeObserver(pl).observe(bar)}
+  // ---- totals
+  const pvA=D.pv.reduce((s,p)=>s+p[2]*p[3],0),dA=D.dia.reduce((s,d)=>s+d[2]*d[2],0);
+  $('kpi').innerHTML='';[[fmt(D.area)+' m²','roof canopy (plan)'],[fmt(D.fields.length),'rooflight fields'],[fmt(D.dia.length),'diamond rooflights'],[fmt(pvA)+' m²','PV arrays (gross, '+D.pv.length+' rows)']].forEach(([v,l])=>{const d=document.createElement('div'),b=document.createElement('b'),s=document.createElement('span');b.textContent=v;s.textContent=l;d.append(b,s);$('kpi').appendChild(d)});
+  $('st').textContent='Click a rooflight or a PV row for details. Right-drag to orbit.';
+  // ---- controls
+  flag('bRoof',()=>[G.roof,G.fas,G.tube]);flag('bSof',()=>[G.sof]);flag('bDia',()=>[G.dia,G.diaG]);flag('bBeam',()=>[G.beam,G.pool]);
+  $('hB').oninput=e=>{const v=+e.target.value;$('hBv').textContent=Math.round(v*100)+'%';BEAMV=v;updateSun()};
+  $('bBeam').addEventListener('click',()=>updateSun());flag('bPV',()=>[G.pv]);flag('bL2',()=>[G.l2]);flag('bGrid',()=>[G.grid]);
+  $('hE').oninput=e=>{E=+e.target.value;$('hEv').textContent='+'+E+' m';place()};
+  $('hV').oninput=e=>{VAULT=+e.target.value;$('hVv').textContent=VAULT+' m';place()};
+  $('hR').oninput=e=>{RISE=+e.target.value;$('hRv').textContent=RISE+' m';place()};
+  $('hO').oninput=e=>{const v=+e.target.value;$('hOv').textContent=Math.round(v*100)+'%';[roofM,G.sof.material].forEach(m=>{m.opacity=v;m.depthWrite=v>.99})};
+  $('bTop').onclick=()=>view('top');$('bPer').onclick=()=>view('per');$('bLow').onclick=()=>view('low');
+  // ---- picking
+  const ray=new THREE.Raycaster(),mp=new THREE.Vector2();let dn=null;
+  const hl=new THREE.LineLoop(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffe066,depthTest:false}));hl.renderOrder=9;hl.visible=false;sc.add(hl);
+  const showCard=(t,s,rows,n)=>{$('cT').textContent=t;$('cS').textContent=s;const B=$('cB');B.textContent='';rows.forEach(([k,v])=>{const a=document.createElement('dt'),b=document.createElement('dd');a.textContent=k;b.textContent=v;B.append(a,b)});$('cN').textContent=n||'';$('card').hidden=false;$('leg').style.visibility='hidden'};
+  $('cardX').onclick=()=>{$('card').hidden=true;$('leg').style.visibility='';hl.visible=false};
+  ren.domElement.addEventListener('pointerdown',e=>{dn=[e.clientX,e.clientY]});
+  ren.domElement.addEventListener('pointerup',e=>{if(!dn||Math.hypot(e.clientX-dn[0],e.clientY-dn[1])>4)return;
+    mp.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);ray.setFromCamera(mp,cam);
+    const hit=ray.intersectObjects([G.dia,G.pv].filter(o=>o.visible),false)[0];if(!hit){return}
+    if(hit.object===G.dia){const d=D.dia[hit.instanceId],F=D.fields[d[5]],z=zf(F.f,F.g)+2;
+      hl.geometry.setFromPoints(F.p.map(([x,y])=>new THREE.Vector3(x,y,z)));hl.visible=true;
+      showCard('Rooflight field '+(d[5]+1),'Diamond rooflights in the roof shell',[['Rooflights',fmt(F.n)],['Field area',fmt(F.a)+' m² (plan)'],['Rooflight size','≈ '+d[2].toFixed(1)+' × '+d[2].toFixed(1)+' m (inner opening)'],['Pitch','≈ 3 m diagonal grid'],['Roof level','+'+zf(F.f).toFixed(1)+' m (assumed)']],'Daylight reaches the gates and halls below through these openings. Positions and sizes from the drawing; glazing build-up not shown.')}
+    else{const p=D.pv[hit.instanceId],z=zf(p[5],p[6])+.8,c=Math.cos(p[4]),s=Math.sin(p[4]);
+      hl.geometry.setFromPoints([[1,1],[-1,1],[-1,-1],[1,-1]].map(([i,j])=>new THREE.Vector3(p[0]+c*p[2]/2*i-s*p[3]/2*j,p[1]+s*p[2]/2*i+c*p[3]/2*j,z)));hl.visible=true;
+      showCard('Photovoltaic row','Solar array on the roof',[['Row size',p[2].toFixed(1)+' × '+p[3].toFixed(1)+' m'],['Gross area',fmt(p[2]*p[3])+' m²'],['All PV rows',D.pv.length+' rows · '+fmt(pvA)+' m²'],['Roof level','+'+zf(p[5]).toFixed(1)+' m (assumed)']],'Module layout inside each row is illustrative; the drawing gives the array outline only.')}});
+  view('per');
+  addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});
+  (function loop(t){requestAnimationFrame(loop);window.__sun&&window.__sun(t||0);ctl.update();ren.render(sc,cam)})();
+})();
+</script>
+</body></html>
